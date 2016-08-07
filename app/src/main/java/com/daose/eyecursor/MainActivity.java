@@ -41,6 +41,7 @@ public class MainActivity extends AppCompatActivity {
     private List<ScanFilter> filters;
     private BluetoothGatt mGatt;
     private static final String LOG_TAG = "BLE";
+    private static final String DEVICE_NAME = "water";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -146,8 +147,11 @@ public class MainActivity extends AppCompatActivity {
         public void onScanResult(int callbackType, ScanResult result) {
             Log.i(LOG_TAG, result.toString());
             BluetoothDevice btDevice = result.getDevice();
-            Log.d(LOG_TAG, "name: " + result.getDevice().getName());
-            //connectToDevice(btDevice);
+            Log.d(LOG_TAG, "name: " + btDevice.getName());
+            if(btDevice.getName() == null) return;
+            if(btDevice.getName().equals(DEVICE_NAME)){
+                connectToDevice(btDevice);
+            }
         }
 
         @Override
@@ -207,8 +211,7 @@ public class MainActivity extends AppCompatActivity {
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
             List<BluetoothGattService> services = gatt.getServices();
             Log.i(LOG_TAG, "services, toString: " + services.toString());
-            gatt.readCharacteristic(services.get(1).getCharacteristics().get
-                    (0));
+            //gatt.readCharacteristic(services.get(1).getCharacteristics().get(0));
         }
 
         @Override
