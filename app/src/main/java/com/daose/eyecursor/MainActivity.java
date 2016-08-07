@@ -24,6 +24,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.Toast;
 
 import java.util.ArrayList;
@@ -33,12 +34,14 @@ import java.util.UUID;
 public class MainActivity extends AppCompatActivity {
 
     private BluetoothAdapter mBluetoothAdapter;
+    private BluetoothGattCharacteristic characteristic;
     private final int REQUEST_ENABLE_BT = 1;
     private static final long SCAN_PERIOD = 10000;
     private BluetoothLeScanner mLEScanner;
     private Handler mHandler;
     private ScanSettings settings;
     private List<ScanFilter> filters;
+    private Button button;
     private BluetoothGatt mGatt;
     private static final String LOG_TAG = "BLE";
     private static final String DEVICE_NAME = "water";
@@ -53,6 +56,9 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, "BLE Not Supported", Toast.LENGTH_SHORT).show();
             finish();
         }
+
+        button = (Button) findViewById(R.id.read);
+        button.setVisibility(View.INVISIBLE);
 
         final BluetoothManager bluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
         mBluetoothAdapter = bluetoothManager.getAdapter();
@@ -87,6 +93,7 @@ public class MainActivity extends AppCompatActivity {
             super.onDestroy();
             return;
         }
+        disconnectFromDevice();
         mGatt.close();
         mGatt = null;
         super.onDestroy();
@@ -149,7 +156,9 @@ public class MainActivity extends AppCompatActivity {
             BluetoothDevice btDevice = result.getDevice();
             Log.d(LOG_TAG, "name: " + btDevice.getName());
             if(btDevice.getName() == null) return;
+
             if(btDevice.getName().equals(DEVICE_NAME)){
+                //We found the device!
                 connectToDevice(btDevice);
             }
         }
@@ -185,8 +194,23 @@ public class MainActivity extends AppCompatActivity {
     public void connectToDevice(BluetoothDevice device) {
         if (mGatt == null) {
             mGatt = device.connectGatt(this, false, gattCallback);
+            button.setVisibility(View.VISIBLE);
             scanLeDevice(false);// will stop after first device detection
         }
+    }
+
+    public void disconnectFromDevice(){
+        if(mGatt != null){
+            mGatt.disconnect();
+        }
+    }
+
+    public void readData(View v){
+        if(mGatt == null){
+            Log.e(LOG_TAG, "mGatt == null!");
+            return;
+        }
+         mGatt.setCharacteristicNotification(characteristic, true);
     }
 
     private final BluetoothGattCallback gattCallback = new BluetoothGattCallback() {
@@ -219,7 +243,11 @@ public class MainActivity extends AppCompatActivity {
                                          BluetoothGattCharacteristic
                                                  characteristic, int status) {
             Log.i(LOG_TAG, "onCharacteristicRead: " + characteristic.toString());
-            gatt.disconnect();
+        }
+
+        @Override
+        public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic){
+            Log.d(LOG_TAG, "onCharacteristicChanged: " + characteristic.toString());
         }
     };
 
